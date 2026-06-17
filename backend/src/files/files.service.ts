@@ -5,7 +5,8 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../database/prisma.service';
-import * as AdmZip from 'adm-zip';
+
+const AdmZip = require('adm-zip');
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -14,9 +15,36 @@ export class FilesService {
   constructor(private readonly prisma: PrismaService) {}
 
   // -------------------------
+  // CLEAN CONTENT (IMPORTANT FIX)
+  // -------------------------
+  private cleanContent(buffer: Buffer): string {
+    return buffer
+      .toString('utf8')
+      .replace(/\u0000/g, '') // remove null bytes
+      .trim();
+  }
+
+  // -------------------------
+  // SKIP BINARY FILES
+  // -------------------------
+  private isBinaryFile(fileName: string): boolean {
+    const binaryExt = [
+      '.png', '.jpg', '.jpeg', '.gif',
+      '.pdf', '.zip', '.exe', '.dll',
+      '.lock', '.ico'
+    ];
+
+    return binaryExt.includes(path.extname(fileName).toLowerCase());
+  }
+
+  // -------------------------
   // UPLOAD ZIP
   // -------------------------
-  async uploadZip(userId: string, projectId: string, file: Express.Multer.File) {
+  async uploadZip(
+    userId: string,
+    projectId: string,
+    file: Express.Multer.File,
+  ) {
     const project = await this.prisma.project.findFirst({
       where: { id: projectId, userId },
     });
@@ -32,9 +60,22 @@ export class FilesService {
     for (const entry of entries) {
       if (entry.isDirectory) continue;
 
-      const content = entry.getData().toString('utf8');
+      const fileName = path.basename(entry.entryName);
+
+      // ❌ skip binary files
+      if (this.isBinaryFile(fileName)) continue;
+
+      let content = '';
+
+      try {
+        const buffer = entry.getData();
+        content = this.cleanContent(buffer);
+      } catch (err) {
+        console.log(`Skipping file ${fileName} due to decode error`);
+        continue;
+      }
+
       const normalizedPath = entry.entryName.replace(/\\/g, '/');
-      const fileName = path.basename(normalizedPath);
       const language = this.detectLanguage(fileName);
 
       filesToCreate.push({
@@ -49,6 +90,7 @@ export class FilesService {
     if (filesToCreate.length > 0) {
       await this.prisma.file.createMany({
         data: filesToCreate,
+        skipDuplicates: true,
       });
     }
 
@@ -61,7 +103,7 @@ export class FilesService {
   }
 
   // -------------------------
-  // GET FILES BY PROJECT
+  // GET FILES
   // -------------------------
   async findByProject(userId: string, projectId: string) {
     const project = await this.prisma.project.findFirst({
@@ -77,7 +119,7 @@ export class FilesService {
   }
 
   // -------------------------
-  // GET SINGLE FILE
+  // SINGLE FILE
   // -------------------------
   async findOne(userId: string, projectId: string, fileId: string) {
     const project = await this.prisma.project.findFirst({
