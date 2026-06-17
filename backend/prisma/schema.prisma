@@ -9,6 +9,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum ReviewType {
@@ -36,34 +37,33 @@ enum MessageRole {
   ASSISTANT
 }
 
-model Users {
-  id           String         @id @default(uuid())
-  email        String         @unique
-  password     String
-  name         String
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  projects     Projects[]
-  reviews      Reviews[]
-  chatSessions ChatSessions[]
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects     Project[]
+  reviews      Review[]
+  chatSessions ChatSession[]
 }
 
-model Projects {
-  id           String         @id @default(uuid())
-  name         String
-  userId       String
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  user         Users          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  files        Files[]
-  reviews      Reviews[]
-  chatSessions ChatSessions[]
+model Project {
+  id        String   @id @default(uuid())
+  name      String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@index([userId])
-  @@index([name])
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  files        File[]
+  reviews      Review[]
+  chatSessions ChatSession[]
 }
 
-model Files {
+model File {
   id        String   @id @default(uuid())
   projectId String
   path      String
@@ -71,14 +71,13 @@ model Files {
   content   String   @db.Text
   language  String
   createdAt DateTime @default(now())
-  project   Projects @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
-  @@index([language])
-  @@index([name])
 }
 
-model Reviews {
+model Review {
   id              String       @id @default(uuid())
   projectId       String
   userId          String
@@ -90,18 +89,15 @@ model Reviews {
   status          ReviewStatus @default(PENDING)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
-  project         Projects     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user            Users        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([userId])
-  @@index([type])
-  @@index([status])
-  @@index([createdAt])
-  @@index([projectId, createdAt])
 }
 
-model AIProviders {
+model AIProvider {
   id        String   @id @default(uuid())
   name      String   @unique
   baseUrl   String
@@ -110,35 +106,31 @@ model AIProviders {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@index([name])
-  @@index([isActive])
 }
 
-model ChatSessions {
-  id        String     @id @default(uuid())
+model ChatSession {
+  id        String   @id @default(uuid())
   projectId String
   userId    String
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  project   Projects   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user      Users      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages  Messages[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
 
   @@index([projectId])
   @@index([userId])
-  @@index([createdAt])
-  @@index([projectId, createdAt])
 }
 
-model Messages {
-  id        String       @id @default(uuid())
+model Message {
+  id        String      @id @default(uuid())
   sessionId String
-  content   String       @db.Text
+  content   String      @db.Text
   role      MessageRole
-  createdAt DateTime     @default(now())
-  session   ChatSessions @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
-  @@index([createdAt])
 }
