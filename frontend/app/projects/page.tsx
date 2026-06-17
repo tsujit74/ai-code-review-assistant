@@ -10,6 +10,10 @@ import { FileUploadForm } from '@/components/files/file-upload-form';
 import { fetchFileTree, fetchFileById } from '@/lib/files';
 import { FileTree } from '@/components/files/file-tree';
 import { FilePreview } from '@/components/files/file-preview';
+import { ReviewTrigger } from '@/components/reviews/review-trigger';
+import { fetchProjectReviews, fetchReview } from '@/lib/reviews';
+import { ReviewHistory } from '@/components/reviews/review-history';
+import { ReviewDetails } from '@/components/reviews/review-details';
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -17,6 +21,8 @@ export default function ProjectsPage() {
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [tree, setTree] = useState([]);
   const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [reviews, setReviews] = useState([]);
+  const [selectedReview, setSelectedReview] = useState<any>(null);
 
   const loadProjects = async () => {
     const data = await fetchProjects();
@@ -29,10 +35,20 @@ export default function ProjectsPage() {
     setTree(data);
   };
 
+  const loadReviews = async (projectId: string) => {
+    const data = await fetchProjectReviews(projectId);
+    setReviews(data);
+  };
+
   const handleSelectFile = async (fileId: string) => {
     if (!selectedProject) return;
     const data = await fetchFileById(selectedProject.id, fileId);
     setSelectedFile(data);
+  };
+
+  const handleSelectReview = async (reviewId: string) => {
+    const data = await fetchReview(reviewId);
+    setSelectedReview(data);
   };
 
   useEffect(() => {
@@ -46,6 +62,7 @@ export default function ProjectsPage() {
   useEffect(() => {
     if (selectedProject) {
       loadTree(selectedProject.id);
+      loadReviews(selectedProject.id);
     }
   }, [selectedProject]);
 
@@ -62,9 +79,23 @@ export default function ProjectsPage() {
             projectId={selectedProject.id}
             onUploaded={() => loadTree(selectedProject.id)}
           />
+
+          <ReviewTrigger
+            projectId={selectedProject.id}
+            onCreated={() => loadReviews(selectedProject.id)}
+          />
+
           <div className="grid gap-6 md:grid-cols-2">
             <FileTree nodes={tree as any} onSelectFile={handleSelectFile} />
             <FilePreview file={selectedFile} />
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <ReviewHistory
+              reviews={reviews as any}
+              onSelect={handleSelectReview}
+            />
+            <ReviewDetails review={selectedReview} />
           </div>
         </div>
       )}
