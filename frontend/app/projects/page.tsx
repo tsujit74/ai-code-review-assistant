@@ -14,6 +14,7 @@ import { ReviewTrigger } from '@/components/reviews/review-trigger';
 import { fetchProjectReviews, fetchReview } from '@/lib/reviews';
 import { ReviewHistory } from '@/components/reviews/review-history';
 import { ReviewDetails } from '@/components/reviews/review-details';
+import { ChatPanel } from '@/components/chat/chat-panel';
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -84,6 +85,8 @@ export default function ProjectsPage() {
             projectId={selectedProject.id}
             onCreated={() => loadReviews(selectedProject.id)}
           />
+
+          <ChatPanel projectId={selectedProject.id} />
 
           <div className="grid gap-6 md:grid-cols-2">
             <FileTree nodes={tree as any} onSelectFile={handleSelectFile} />
