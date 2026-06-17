@@ -51,6 +51,11 @@ export class FilesController {
     return this.filesService.findByProject(user.id, projectId);
   }
 
+  @Get('tree/:projectId')
+  getTree(@User() user: any, @Param('projectId') projectId: string) {
+    return this.filesService.getTree(user.id, projectId);
+  }
+
   @Get(':projectId/:fileId')
   findOne(
     @User() user: any,
