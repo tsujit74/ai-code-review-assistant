@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { AiProvidersService } from '../ai-providers/ai-providers.service';
-import { FilesService } from '../files/files.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import axios from 'axios';
 
@@ -10,7 +9,6 @@ export class ReviewsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiProvidersService: AiProvidersService,
-    private readonly filesService: FilesService,
   ) {}
 
   async createReview(userId: string, dto: CreateReviewDto) {
@@ -36,19 +34,6 @@ export class ReviewsService {
 
     const prompt = this.buildPrompt(dto.type, files);
 
-    await this.prisma.review.create({
-      data: {
-        projectId: dto.projectId,
-        userId,
-        type: dto.type,
-        summary: 'Review started',
-        issues: [],
-        recommendations: [],
-        severity: 'INFO',
-        status: 'PENDING',
-      },
-    });
-
     try {
       const response = await axios.post(
         `${provider.baseUrl}/chat/completions`,
@@ -58,12 +43,9 @@ export class ReviewsService {
             {
               role: 'system',
               content:
-                'You are a senior code reviewer. Return ONLY valid JSON with keys: summary, issues, recommendations, severity.',
+                'Return ONLY valid JSON with keys: summary, issues, recommendations, severity.',
             },
-            {
-              role: 'user',
-              content: prompt,
-            },
+            { role: 'user', content: prompt },
           ],
           temperature: 0.2,
         },
@@ -76,9 +58,18 @@ export class ReviewsService {
       );
 
       const content = response.data?.choices?.[0]?.message?.content ?? '{}';
-      const parsed = JSON.parse(content);
+      let parsed: any = {};
 
-      const severity = parsed.severity || 'INFO';
+      try {
+        parsed = JSON.parse(content);
+      } catch {
+        parsed = {
+          summary: 'Invalid AI response',
+          issues: [],
+          recommendations: [],
+          severity: 'LOW',
+        };
+      }
 
       return this.prisma.review.create({
         data: {
@@ -88,11 +79,11 @@ export class ReviewsService {
           summary: parsed.summary || 'No summary returned',
           issues: parsed.issues || [],
           recommendations: parsed.recommendations || [],
-          severity,
+          severity: parsed.severity || 'INFO',
           status: 'COMPLETED',
         },
       });
-    } catch (error) {
+    } catch {
       return this.prisma.review.create({
         data: {
           projectId: dto.projectId,
@@ -123,10 +114,7 @@ export class ReviewsService {
 
   async findOne(userId: string, reviewId: string) {
     const review = await this.prisma.review.findFirst({
-      where: {
-        id: reviewId,
-        userId,
-      },
+      where: { id: reviewId, userId },
     });
 
     if (!review) throw new NotFoundException('Review not found');
