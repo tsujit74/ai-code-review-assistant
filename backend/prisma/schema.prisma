@@ -4,10 +4,141 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum ReviewType {
+  SECURITY
+  PERFORMANCE
+  CODE_QUALITY
+}
+
+enum Severity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum ReviewStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+model Users {
+  id           String         @id @default(uuid())
+  email        String         @unique
+  password     String
+  name         String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  projects     Projects[]
+  reviews      Reviews[]
+  chatSessions ChatSessions[]
+}
+
+model Projects {
+  id           String         @id @default(uuid())
+  name         String
+  userId       String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  user         Users          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  files        Files[]
+  reviews      Reviews[]
+  chatSessions ChatSessions[]
+
+  @@index([userId])
+  @@index([name])
+}
+
+model Files {
+  id        String   @id @default(uuid())
+  projectId String
+  path      String
+  name      String
+  content   String   @db.Text
+  language  String
+  createdAt DateTime @default(now())
+  project   Projects @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([language])
+  @@index([name])
+}
+
+model Reviews {
+  id              String       @id @default(uuid())
+  projectId       String
+  userId          String
+  type            ReviewType
+  summary         String       @db.Text
+  issues          Json
+  recommendations Json
+  severity        Severity
+  status          ReviewStatus @default(PENDING)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  project         Projects     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user            Users        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@index([projectId, createdAt])
+}
+
+model AIProviders {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  baseUrl   String
+  apiKey    String
+  modelName String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([isActive])
+}
+
+model ChatSessions {
+  id        String     @id @default(uuid())
+  projectId String
+  userId    String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  project   Projects   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      Users      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Messages[]
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([projectId, createdAt])
+}
+
+model Messages {
+  id        String       @id @default(uuid())
+  sessionId String
+  content   String       @db.Text
+  role      MessageRole
+  createdAt DateTime     @default(now())
+  session   ChatSessions @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([createdAt])
 }
