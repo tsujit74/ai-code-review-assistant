@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { AiProvidersService } from '../ai-providers/ai-providers.service';
 import { CreateReviewDto } from './dto/create-review.dto';
@@ -28,6 +32,7 @@ export class ReviewsService {
     }
 
     const provider = await this.aiProvidersService.getDefaultProvider();
+
     if (!provider) {
       throw new BadRequestException('No active AI provider configured');
     }
@@ -35,6 +40,8 @@ export class ReviewsService {
     const prompt = this.buildPrompt(dto.type, files);
 
     try {
+
+      
       const response = await axios.post(
         `${provider.baseUrl}/chat/completions`,
         {
@@ -43,11 +50,15 @@ export class ReviewsService {
             {
               role: 'system',
               content:
-                'Return ONLY valid JSON with keys: summary, issues, recommendations, severity.',
+                'You are a senior code reviewer. Return ONLY valid JSON with keys: summary, issues, recommendations, severity.',
             },
-            { role: 'user', content: prompt },
+            {
+              role: 'user',
+              content: prompt,
+            },
           ],
           temperature: 0.2,
+          max_tokens: 1200,
         },
         {
           headers: {
@@ -57,11 +68,19 @@ export class ReviewsService {
         },
       );
 
-      const content = response.data?.choices?.[0]?.message?.content ?? '{}';
-      let parsed: any = {};
+
+      const content =
+        response.data?.choices?.[0]?.message?.content ?? '{}';
+
+      let parsed: any;
 
       try {
-        parsed = JSON.parse(content);
+        parsed = JSON.parse(
+          content
+            .replace(/```json/g, '')
+            .replace(/```/g, '')
+            .trim(),
+        );
       } catch {
         parsed = {
           summary: 'Invalid AI response',
@@ -83,13 +102,20 @@ export class ReviewsService {
           status: 'COMPLETED',
         },
       });
-    } catch {
+    } catch (error) {
+      console.error(
+        'GROQ REVIEW ERROR:',
+        error?.response?.data || error.message,
+      );
+
       return this.prisma.review.create({
         data: {
           projectId: dto.projectId,
           userId,
           type: dto.type,
-          summary: 'Review failed',
+          summary:
+            error?.response?.data?.error?.message ||
+            'Review failed',
           issues: [],
           recommendations: [],
           severity: 'LOW',
@@ -124,30 +150,21 @@ export class ReviewsService {
 
   private buildPrompt(type: string, files: any[]) {
     const fileContent = files
-      .map((file) => `FILE: ${file.path}\n\`\`\`\n${file.content}\n\`\`\``)
+      .map(
+        (file) =>
+          `FILE: ${file.path}\n\`\`\`\n${file.content.slice(0, 2000)}\n\`\`\``,
+      )
       .join('\n\n');
 
     return `
 Review this code for ${type} issues.
 
-Return JSON only in this format:
+Return JSON only:
+
 {
-  "summary": "short overall summary",
-  "issues": [
-    {
-      "file": "path/to/file",
-      "line": 1,
-      "message": "issue description",
-      "severity": "HIGH"
-    }
-  ],
-  "recommendations": [
-    {
-      "file": "path/to/file",
-      "message": "recommendation text",
-      "priority": "MEDIUM"
-    }
-  ],
+  "summary": "short summary",
+  "issues": [],
+  "recommendations": [],
   "severity": "HIGH"
 }
 
