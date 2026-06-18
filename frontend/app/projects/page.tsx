@@ -37,10 +37,22 @@ export default function ProjectsPage() {
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
+  const [loadingProjects, setLoadingProjects] = useState(true);
+
   const loadProjects = async () => {
-    const data = await fetchProjects();
-    setProjects(data);
-    if (!selectedProject && data.length > 0) setSelectedProject(data[0]);
+    setLoadingProjects(true);
+    try {
+      const data = await fetchProjects();
+      setProjects(data);
+
+      if (data.length > 0) {
+        setSelectedProject(data[0]);
+      } else {
+        setSelectedProject(null);
+      }
+    } finally {
+      setLoadingProjects(false);
+    }
   };
 
   const loadTree = async (projectId: string) => {
@@ -160,7 +172,8 @@ export default function ProjectsPage() {
       "
           >
             <span className="relative z-10 flex items-center gap-2">
-              <span className="animate-pulse text-green-200">✦</span> AI Assistant
+              <span className="animate-pulse text-green-200">✦</span> AI
+              Assistant
             </span>
 
             <div
@@ -178,18 +191,34 @@ export default function ProjectsPage() {
         </div>
       </header>
 
-      {selectedProject && (
+      {loadingProjects ? (
+        <div className="flex items-center justify-center h-[70vh] text-zinc-400">
+          Loading projects...
+        </div>
+      ) : !selectedProject ? (
+        <div className="flex flex-col items-center justify-center h-[70vh] text-zinc-400 gap-3">
+          <p>No project found</p>
+          <button
+            onClick={() => setProjectModalOpen(true)}
+            className="px-4 py-2 border border-zinc-400 bg-zinc-900"
+          >
+            + Create First Project
+          </button>
+        </div>
+      ) : (
         <section className="grid grid-cols-12 gap-4 h-[calc(100vh-100px)]">
           <aside className="col-span-3 flex flex-col h-full min-h-0">
             <div className="flex flex-col flex-1 min-h-0  border border-zinc-400 bg-zinc-900/40 overflow-hidden">
               {/* Explorer */}
               <div className="flex-1 min-h-0 overflow-hidden">
-                <FileExplorer
-                  projectId={selectedProject.id}
-                  nodes={tree as any}
-                  onSelectFile={handleSelectFile}
-                  onUploaded={() => loadTree(selectedProject.id)}
-                />
+                {selectedProject?.id && (
+                  <FileExplorer
+                    projectId={selectedProject.id}
+                    nodes={tree as any}
+                    onSelectFile={handleSelectFile}
+                    onUploaded={() => loadTree(selectedProject.id)}
+                  />
+                )}
               </div>
             </div>
           </aside>
@@ -311,6 +340,8 @@ export default function ProjectsPage() {
         onSelectReview={handleSelectReview}
       />
 
+     
+
       {chatOpen && (
         <div className="fixed right-0 top-0 h-full w-[820px] bg-zinc-950 border-l border-zinc-800 shadow-2xl z-50 flex flex-col">
           <div className="p-3 border-b border-zinc-400 flex justify-between">
@@ -379,5 +410,3 @@ function Panel({ title, children }: any) {
     </div>
   );
 }
-
-//MODal project form
