@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { fetchProjects } from "@/lib/projects";
 import { fetchFileTree, fetchFileById } from "@/lib/files";
 import { fetchProjectReviews, fetchReview } from "@/lib/reviews";
+import { getAiProviders } from "@/lib/aiprovider";
 
 import { CreateProjectForm } from "@/components/projects/create-project-form";
 import { ProjectList } from "@/components/projects/project-list";
@@ -19,6 +20,7 @@ import { ReviewDetails } from "@/components/reviews/review-details";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { ReviewCenterModal } from "@/components/reviews/review-center-modal";
 import { Plus } from "lucide-react";
+import { AiProviderSelector } from "@/components/aiproviders/AIProviderSelector";
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -39,6 +41,9 @@ export default function ProjectsPage() {
 
   const [loadingProjects, setLoadingProjects] = useState(true);
 
+  const [selectedProvider, setSelectedProvider] = useState<any>(null);
+  const [providers, setProviders] = useState<any[]>([]);
+
   const loadProjects = async () => {
     setLoadingProjects(true);
     try {
@@ -52,6 +57,15 @@ export default function ProjectsPage() {
       }
     } finally {
       setLoadingProjects(false);
+    }
+  };
+
+  const loadProviders = async () => {
+    const data = await getAiProviders();
+    setProviders(data);
+
+    if (!selectedProvider && data.length > 0) {
+      setSelectedProvider(data[0]);
     }
   };
 
@@ -82,6 +96,7 @@ export default function ProjectsPage() {
       return;
     }
     loadProjects();
+    loadProviders();
   }, []);
 
   useEffect(() => {
@@ -264,10 +279,20 @@ export default function ProjectsPage() {
               </div>
             </div>
 
+            <AiProviderSelector
+              providers={providers}
+              selected={selectedProvider}
+              onChange={setSelectedProvider}
+              onCreated={async () => {
+                await loadProviders();
+              }}
+            />
+
             {/* AI REVIEW */}
             <div className=" border border-zinc-400 bg-zinc-900/40 p-3">
               <ReviewTrigger
                 projectId={selectedProject.id}
+                provider={selectedProvider}
                 onCreated={async () => {
                   await loadReviews(selectedProject.id);
                   setReviewModalOpen(true);
@@ -339,8 +364,6 @@ export default function ProjectsPage() {
         selectedReview={selectedReview}
         onSelectReview={handleSelectReview}
       />
-
-     
 
       {chatOpen && (
         <div className="fixed right-0 top-0 h-full w-[820px] bg-zinc-950 border-l border-zinc-800 shadow-2xl z-50 flex flex-col">

@@ -1,7 +1,16 @@
-import { api } from './api';
+import { api } from "./api";
 
-export async function createReview(projectId: string, type: string) {
-  const res = await api.post('/reviews', { projectId, type });
+export async function createReview(
+  projectId: string,
+  type: string,
+  providerId: string,
+) {
+  const res = await api.post("/reviews", {
+    projectId,
+    type,
+    providerId,
+  });
+
   return res.data;
 }
 

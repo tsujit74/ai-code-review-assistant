@@ -1,22 +1,26 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { createReview } from '@/lib/reviews';
+import { useState } from "react";
+import { createReview } from "@/lib/reviews";
 
 export function ReviewTrigger({
   projectId,
+  provider,
   onCreated,
 }: {
   projectId: string;
+  provider?: any;
   onCreated: () => void;
 }) {
   const [loading, setLoading] = useState(false);
 
   const handleReview = async (type: string) => {
+    if (!provider || loading) return;
+
     setLoading(true);
 
     try {
-      await createReview(projectId, type);
+      await createReview(projectId, type, provider.id);
       onCreated();
     } finally {
       setLoading(false);
@@ -33,7 +37,7 @@ export function ReviewTrigger({
     icon: string;
   }) => (
     <button
-      disabled={loading}
+      disabled={loading || !provider}
       onClick={() => handleReview(type)}
       className="
         w-full
@@ -48,7 +52,6 @@ export function ReviewTrigger({
         transition-all
         disabled:opacity-50
         disabled:cursor-not-allowed
-        cursor-pointer
       "
     >
       <div className="flex items-center gap-3">
@@ -79,25 +82,18 @@ export function ReviewTrigger({
         </p>
       </div>
 
+      {/* Warning */}
+      {!provider && (
+        <div className="px-4 py-2 text-[11px] text-yellow-300 border-b border-zinc-800">
+          ⚠ Please select an AI provider first
+        </div>
+      )}
+
       {/* Actions */}
       <div className="p-3 space-y-2">
-        <Button
-          icon="🛡️"
-          label="Security Scan"
-          type="SECURITY"
-        />
-
-        <Button
-          icon="⚡"
-          label="Performance Audit"
-          type="PERFORMANCE"
-        />
-
-        <Button
-          icon="✨"
-          label="Code Quality Review"
-          type="CODE_QUALITY"
-        />
+        <Button icon="🛡️" label="Security Scan" type="SECURITY" />
+        <Button icon="⚡" label="Performance Audit" type="PERFORMANCE" />
+        <Button icon="✨" label="Code Quality Review" type="CODE_QUALITY" />
       </div>
 
       {/* Footer */}
