@@ -1,4 +1,4 @@
-import { IsBoolean, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateAiProviderDto {
   @IsString()
@@ -20,5 +20,6 @@ export class CreateAiProviderDto {
   modelName: string;
 
   @IsBoolean()
-  isActive: boolean;
+  @IsOptional()
+  isActive?: boolean = true;
 }

@@ -50,7 +50,12 @@ export class ChatService {
 
   /* ================= SEND MESSAGE ================= */
 
-  async sendMessage(userId: string, sessionId: string, message: string) {
+  async sendMessage(
+    userId: string,
+    sessionId: string,
+    message: string,
+    providerId?: string, // 👈 IMPORTANT (USER CHOICE)
+  ) {
     const session = await this.prisma.chatSession.findFirst({
       where: { id: sessionId, userId },
     });
@@ -69,15 +74,22 @@ export class ChatService {
     });
 
     try {
-      /* ================= AI PROVIDER (UNIFIED) ================= */
+      /* ================= AI PROVIDER RESOLUTION ================= */
 
-      const provider = await this.aiProvidersService.getDefaultProvider();
+      let provider;
 
-      if (!provider) {
-        throw new BadRequestException('No active AI provider configured');
+      if (providerId) {
+        provider = await this.aiProvidersService.findOne(userId, providerId);
+      } else {
+        provider =
+          await this.aiProvidersService.getDefaultProvider(userId);
       }
 
-      /* ================= OPTIONAL: LIGHT PROJECT CONTEXT ================= */
+      if (!provider) {
+        throw new BadRequestException('No AI provider configured');
+      }
+
+      /* ================= PROJECT CONTEXT ================= */
 
       const files = await this.prisma.file.findMany({
         where: { projectId: session.projectId },
@@ -108,13 +120,13 @@ ${files
             {
               role: 'system',
               content: `
-You are a senior code-aware assistant.
+You are a senior code assistant.
 
 Rules:
-- Keep answers VERY SHORT (1–4 lines max)
-- Be direct and practical
-- If code is involved, focus on bug fix or improvement
-- Do not over-explain
+- Be extremely concise (1–4 lines max)
+- Focus on practical fixes
+- No unnecessary explanation
+- If code issue → give fix immediately
 
 ${projectContext}
               `.trim(),
@@ -125,7 +137,7 @@ ${projectContext}
             },
           ],
           temperature: 0.2,
-          max_tokens: 250,
+          max_tokens: 300,
         },
         {
           headers: {
@@ -156,7 +168,8 @@ ${projectContext}
       console.error('AI ERROR:', error?.response?.data || error.message);
 
       throw new BadRequestException(
-        error?.response?.data?.error?.message || 'AI request failed',
+        error?.response?.data?.error?.message ||
+          'AI request failed',
       );
     }
   }

@@ -17,12 +17,17 @@ export class ReviewsService {
 
   /* ================= CREATE REVIEW ================= */
 
-  async createReview(userId: string, dto: CreateReviewDto) {
+  async createReview(
+    userId: string,
+    dto: CreateReviewDto,
+  ) {
     const project = await this.prisma.project.findFirst({
       where: { id: dto.projectId, userId },
     });
 
-    if (!project) throw new NotFoundException('Project not found');
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
 
     const files = await this.prisma.file.findMany({
       where: { projectId: dto.projectId },
@@ -30,17 +35,42 @@ export class ReviewsService {
     });
 
     if (!files.length) {
-      throw new BadRequestException('No files found in project');
+      throw new BadRequestException(
+        'No files found in project',
+      );
     }
 
-    const provider = await this.aiProvidersService.getDefaultProvider();
+    /* ================= PROVIDER RESOLUTION ================= */
+
+    let provider;
+
+    // ✅ NEW: allow user-selected provider
+    if (dto.providerId) {
+      provider =
+        await this.aiProvidersService.findOne(
+          userId,
+          dto.providerId,
+        );
+    } else {
+      provider =
+        await this.aiProvidersService.getDefaultProvider(
+          userId,
+        );
+    }
 
     if (!provider) {
-      throw new BadRequestException('No active AI provider configured');
+      throw new BadRequestException(
+        'No active AI provider configured',
+      );
     }
 
-    const selectedFiles = this.selectRelevantFiles(files);
-    const prompt = this.buildPrompt(dto.type, selectedFiles);
+    const selectedFiles =
+      this.selectRelevantFiles(files);
+
+    const prompt = this.buildPrompt(
+      dto.type,
+      selectedFiles,
+    );
 
     try {
       const response = await axios.post(
@@ -51,7 +81,7 @@ export class ReviewsService {
             {
               role: 'system',
               content:
-                'You are a senior software engineer. Return ONLY valid JSON with: summary, issues, recommendations, severity. Focus only on important logic.',
+                'You are a senior software engineer. Return ONLY valid JSON with: summary, issues, recommendations, severity.',
             },
             {
               role: 'user',
@@ -70,13 +100,17 @@ export class ReviewsService {
       );
 
       const content =
-        response.data?.choices?.[0]?.message?.content ?? '{}';
+        response.data?.choices?.[0]?.message?.content ??
+        '{}';
 
       let parsed: any;
 
       try {
         parsed = JSON.parse(
-          content.replace(/```json/g, '').replace(/```/g, '').trim(),
+          content
+            .replace(/```json/g, '')
+            .replace(/```/g, '')
+            .trim(),
         );
       } catch {
         parsed = {
@@ -92,9 +126,11 @@ export class ReviewsService {
           projectId: dto.projectId,
           userId,
           type: dto.type,
-          summary: parsed.summary || 'No summary returned',
+          summary:
+            parsed.summary || 'No summary returned',
           issues: parsed.issues || [],
-          recommendations: parsed.recommendations || [],
+          recommendations:
+            parsed.recommendations || [],
           severity: parsed.severity || 'INFO',
           status: 'COMPLETED',
         },
@@ -111,7 +147,8 @@ export class ReviewsService {
           userId,
           type: dto.type,
           summary:
-            error?.response?.data?.error?.message || 'Review failed',
+            error?.response?.data?.error?.message ||
+            'Review failed',
           issues: [],
           recommendations: [],
           severity: 'LOW',
@@ -123,12 +160,17 @@ export class ReviewsService {
 
   /* ================= FIND BY PROJECT ================= */
 
-  async findByProject(userId: string, projectId: string) {
+  async findByProject(
+    userId: string,
+    projectId: string,
+  ) {
     const project = await this.prisma.project.findFirst({
       where: { id: projectId, userId },
     });
 
-    if (!project) throw new NotFoundException('Project not found');
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
 
     return this.prisma.review.findMany({
       where: { projectId },
@@ -143,7 +185,9 @@ export class ReviewsService {
       where: { id: reviewId, userId },
     });
 
-    if (!review) throw new NotFoundException('Review not found');
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
 
     return review;
   }
@@ -156,7 +200,6 @@ export class ReviewsService {
         let score = 0;
         const path = file.path.toLowerCase();
 
-        // Entry / core files
         if (
           path.includes('main') ||
           path.includes('app') ||
@@ -165,7 +208,6 @@ export class ReviewsService {
           score += 10;
         }
 
-        // Business logic
         if (
           path.includes('service') ||
           path.includes('controller') ||
@@ -174,12 +216,13 @@ export class ReviewsService {
           score += 7;
         }
 
-        // Helpers
-        if (path.includes('util') || path.includes('helper')) {
+        if (
+          path.includes('util') ||
+          path.includes('helper')
+        ) {
           score += 4;
         }
 
-        // Size factor
         if (file.content?.length > 1000) {
           score += 2;
         }
@@ -191,7 +234,7 @@ export class ReviewsService {
         };
       })
       .sort((a, b) => b.score - a.score)
-      .slice(0, 8); // 🔥 token control
+      .slice(0, 8);
   }
 
   /* ================= CONTENT COMPRESSION ================= */
@@ -201,7 +244,7 @@ export class ReviewsService {
 
     return content
       .split('\n')
-      .slice(0, 120) // prevent huge token usage
+      .slice(0, 120)
       .join('\n');
   }
 
@@ -229,17 +272,8 @@ Return STRICT JSON:
 {
   "summary": "short analysis",
   "severity": "HIGH | MEDIUM | LOW",
-  "issues": [
-    {
-      "file": "file path",
-      "problem": "what is wrong",
-      "severity": "HIGH | MEDIUM | LOW",
-      "lineHint": "optional"
-    }
-  ],
-  "recommendations": [
-    "clear actionable improvement"
-  ]
+  "issues": [],
+  "recommendations": []
 }
 
 CODEBASE:

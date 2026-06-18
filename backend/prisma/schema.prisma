@@ -48,6 +48,7 @@ model User {
   projects     Project[]
   reviews      Review[]
   chatSessions ChatSession[]
+  aiProviders  AIProvider[]   
 }
 
 model Project {
@@ -99,13 +100,20 @@ model Review {
 
 model AIProvider {
   id        String   @id @default(uuid())
-  name      String   @unique
+  userId    String
+
+  name      String
   baseUrl   String
   apiKey    String
   modelName String
   isActive  Boolean  @default(true)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model ChatSession {

@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export enum ReviewType {
   SECURITY = 'SECURITY',
@@ -13,4 +13,8 @@ export class CreateReviewDto {
 
   @IsEnum(ReviewType)
   type: ReviewType;
+
+  @IsString()
+  @IsOptional()
+  providerId?: string;
 }

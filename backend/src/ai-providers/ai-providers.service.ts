@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { CreateAiProviderDto } from './dto/create-ai-provider.dto';
 import { UpdateAiProviderDto } from './dto/update-ai-provider.dto';
@@ -7,9 +11,12 @@ import { UpdateAiProviderDto } from './dto/update-ai-provider.dto';
 export class AiProvidersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateAiProviderDto) {
-    const existing = await this.prisma.aIProvider.findUnique({
-      where: { name: dto.name },
+  async create(userId: string, dto: CreateAiProviderDto) {
+    const existing = await this.prisma.aIProvider.findFirst({
+      where: {
+        userId,
+        name: dto.name,
+      },
     });
 
     if (existing) {
@@ -17,26 +24,39 @@ export class AiProvidersService {
     }
 
     return this.prisma.aIProvider.create({
-      data: dto,
+      data: {
+        ...dto,
+        userId,
+      },
     });
   }
 
-  async findAll() {
+ 
+  async findAll(userId: string) {
     return this.prisma.aIProvider.findMany({
+      where: { userId },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async findActive() {
+ 
+  async findActive(userId: string) {
     return this.prisma.aIProvider.findMany({
-      where: { isActive: true },
+      where: {
+        userId,
+        isActive: true,
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async findOne(id: string) {
-    const provider = await this.prisma.aIProvider.findUnique({
-      where: { id },
+
+  async findOne(userId: string, id: string) {
+    const provider = await this.prisma.aIProvider.findFirst({
+      where: {
+        id,
+        userId,
+      },
     });
 
     if (!provider) {
@@ -46,8 +66,9 @@ export class AiProvidersService {
     return provider;
   }
 
-  async update(id: string, dto: UpdateAiProviderDto) {
-    await this.findOne(id);
+  
+  async update(userId: string, id: string, dto: UpdateAiProviderDto) {
+    await this.findOne(userId, id);
 
     return this.prisma.aIProvider.update({
       where: { id },
@@ -55,26 +76,37 @@ export class AiProvidersService {
     });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(userId: string, id: string) {
+    await this.findOne(userId, id);
 
     await this.prisma.aIProvider.delete({
       where: { id },
     });
 
-    return { message: 'AI provider deleted successfully' };
+    return {
+      message: 'AI provider deleted successfully',
+    };
   }
 
-  async getByName(name: string) {
-    return this.prisma.aIProvider.findUnique({
-      where: { name },
+  
+  async getByName(userId: string, name: string) {
+    return this.prisma.aIProvider.findFirst({
+      where: {
+        userId,
+        name,
+      },
     });
   }
 
-  async getDefaultProvider() {
+  async getDefaultProvider(userId: string) {
     return this.prisma.aIProvider.findFirst({
-      where: { isActive: true },
-      orderBy: { createdAt: 'desc' },
+      where: {
+        userId,
+        isActive: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
   }
 }
