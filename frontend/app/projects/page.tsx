@@ -19,7 +19,7 @@ import { ReviewHistory } from "@/components/reviews/review-history";
 import { ReviewDetails } from "@/components/reviews/review-details";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { ReviewCenterModal } from "@/components/reviews/review-center-modal";
-import { Plus } from "lucide-react";
+import { LogOut, Plus } from "lucide-react";
 import { AiProviderSelector } from "@/components/aiproviders/AIProviderSelector";
 
 export default function ProjectsPage() {
@@ -88,6 +88,11 @@ export default function ProjectsPage() {
   const handleSelectReview = async (reviewId: string) => {
     const data = await fetchReview(reviewId);
     setSelectedReview(data);
+  };
+
+  const handleLogout = () => {
+    auth.logout();
+    router.replace("/auth/login");
   };
 
   useEffect(() => {
@@ -170,7 +175,8 @@ export default function ProjectsPage() {
           </div>
 
           {/* Right */}
-          <button
+          <div className="flex justify-center gap-2">
+            <button
             onClick={() => setChatOpen(true)}
             className="
         group
@@ -203,6 +209,26 @@ export default function ProjectsPage() {
         "
             />
           </button>
+
+          <button
+  onClick={handleLogout}
+  className="
+    h-[38px]
+    px-4
+    flex items-center gap-2
+    border border-red-400
+    bg-zinc-900
+    text-red-200
+    text-sm
+    hover:bg-red-800
+    hover:border-red-300
+    transition-all
+  "
+>
+  <LogOut size={15} />
+  Logout
+</button>
+          </div>
         </div>
       </header>
 
@@ -378,7 +404,10 @@ export default function ProjectsPage() {
           </div>
 
           <div className="flex-1 overflow-hidden">
-            <ChatPanel projectId={selectedProject?.id} provider={selectedProvider} />
+            <ChatPanel
+              projectId={selectedProject?.id}
+              provider={selectedProvider}
+            />
           </div>
         </div>
       )}

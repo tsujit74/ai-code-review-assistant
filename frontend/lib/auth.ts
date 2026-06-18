@@ -20,13 +20,23 @@ export const auth = {
     localStorage.setItem("user", JSON.stringify(user));
   },
 
+  logout() {
+    if (typeof window === "undefined") return;
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+  },
+
   remove() {
     if (typeof window === "undefined") return;
+
     localStorage.removeItem("token");
     localStorage.removeItem("user");
   },
 
   isAuthenticated(): boolean {
+    if (typeof window === "undefined") return false;
+
     return !!localStorage.getItem("token");
   },
 };
