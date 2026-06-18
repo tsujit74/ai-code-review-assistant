@@ -15,6 +15,8 @@ export class ReviewsService {
     private readonly aiProvidersService: AiProvidersService,
   ) {}
 
+  /* ================= CREATE REVIEW ================= */
+
   async createReview(userId: string, dto: CreateReviewDto) {
     const project = await this.prisma.project.findFirst({
       where: { id: dto.projectId, userId },
@@ -27,7 +29,7 @@ export class ReviewsService {
       orderBy: { path: 'asc' },
     });
 
-    if (files.length === 0) {
+    if (!files.length) {
       throw new BadRequestException('No files found in project');
     }
 
@@ -37,11 +39,10 @@ export class ReviewsService {
       throw new BadRequestException('No active AI provider configured');
     }
 
-    const prompt = this.buildPrompt(dto.type, files);
+    const selectedFiles = this.selectRelevantFiles(files);
+    const prompt = this.buildPrompt(dto.type, selectedFiles);
 
     try {
-
-      
       const response = await axios.post(
         `${provider.baseUrl}/chat/completions`,
         {
@@ -50,7 +51,7 @@ export class ReviewsService {
             {
               role: 'system',
               content:
-                'You are a senior code reviewer. Return ONLY valid JSON with keys: summary, issues, recommendations, severity.',
+                'You are a senior software engineer. Return ONLY valid JSON with: summary, issues, recommendations, severity. Focus only on important logic.',
             },
             {
               role: 'user',
@@ -68,7 +69,6 @@ export class ReviewsService {
         },
       );
 
-
       const content =
         response.data?.choices?.[0]?.message?.content ?? '{}';
 
@@ -76,14 +76,11 @@ export class ReviewsService {
 
       try {
         parsed = JSON.parse(
-          content
-            .replace(/```json/g, '')
-            .replace(/```/g, '')
-            .trim(),
+          content.replace(/```json/g, '').replace(/```/g, '').trim(),
         );
       } catch {
         parsed = {
-          summary: 'Invalid AI response',
+          summary: 'Failed to parse AI response',
           issues: [],
           recommendations: [],
           severity: 'LOW',
@@ -104,7 +101,7 @@ export class ReviewsService {
       });
     } catch (error) {
       console.error(
-        'GROQ REVIEW ERROR:',
+        'AI REVIEW ERROR:',
         error?.response?.data || error.message,
       );
 
@@ -114,8 +111,7 @@ export class ReviewsService {
           userId,
           type: dto.type,
           summary:
-            error?.response?.data?.error?.message ||
-            'Review failed',
+            error?.response?.data?.error?.message || 'Review failed',
           issues: [],
           recommendations: [],
           severity: 'LOW',
@@ -124,6 +120,8 @@ export class ReviewsService {
       });
     }
   }
+
+  /* ================= FIND BY PROJECT ================= */
 
   async findByProject(userId: string, projectId: string) {
     const project = await this.prisma.project.findFirst({
@@ -138,6 +136,8 @@ export class ReviewsService {
     });
   }
 
+  /* ================= FIND ONE ================= */
+
   async findOne(userId: string, reviewId: string) {
     const review = await this.prisma.review.findFirst({
       where: { id: reviewId, userId },
@@ -148,27 +148,101 @@ export class ReviewsService {
     return review;
   }
 
+  /* ================= SMART FILE SELECTION ================= */
+
+  private selectRelevantFiles(files: any[]) {
+    return files
+      .map((file) => {
+        let score = 0;
+        const path = file.path.toLowerCase();
+
+        // Entry / core files
+        if (
+          path.includes('main') ||
+          path.includes('app') ||
+          path.includes('index')
+        ) {
+          score += 10;
+        }
+
+        // Business logic
+        if (
+          path.includes('service') ||
+          path.includes('controller') ||
+          path.includes('module')
+        ) {
+          score += 7;
+        }
+
+        // Helpers
+        if (path.includes('util') || path.includes('helper')) {
+          score += 4;
+        }
+
+        // Size factor
+        if (file.content?.length > 1000) {
+          score += 2;
+        }
+
+        return {
+          path: file.path,
+          content: file.content,
+          score,
+        };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 8); // 🔥 token control
+  }
+
+  /* ================= CONTENT COMPRESSION ================= */
+
+  private compressContent(content: string) {
+    if (!content) return '';
+
+    return content
+      .split('\n')
+      .slice(0, 120) // prevent huge token usage
+      .join('\n');
+  }
+
+  /* ================= PROMPT BUILDER ================= */
+
   private buildPrompt(type: string, files: any[]) {
     const fileContent = files
       .map(
         (file) =>
-          `FILE: ${file.path}\n\`\`\`\n${file.content.slice(0, 2000)}\n\`\`\``,
+          `FILE: ${file.path}\n\`\`\`\n${this.compressContent(
+            file.content,
+          )}\n\`\`\``,
       )
       .join('\n\n');
 
     return `
-Review this code for ${type} issues.
+You are a senior software engineer performing a ${type} review.
 
-Return JSON only:
+RULES:
+- Focus ONLY on important logic
+- Ignore boilerplate and formatting
+- Be precise and actionable
 
+Return STRICT JSON:
 {
-  "summary": "short summary",
-  "issues": [],
-  "recommendations": [],
-  "severity": "HIGH"
+  "summary": "short analysis",
+  "severity": "HIGH | MEDIUM | LOW",
+  "issues": [
+    {
+      "file": "file path",
+      "problem": "what is wrong",
+      "severity": "HIGH | MEDIUM | LOW",
+      "lineHint": "optional"
+    }
+  ],
+  "recommendations": [
+    "clear actionable improvement"
+  ]
 }
 
-Code:
+CODEBASE:
 ${fileContent}
 `;
   }

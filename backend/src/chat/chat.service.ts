@@ -4,11 +4,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { AiProvidersService } from '../ai-providers/ai-providers.service';
 import axios from 'axios';
 
 @Injectable()
 export class ChatService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly aiProvidersService: AiProvidersService,
+  ) {}
+
+  /* ================= CREATE SESSION ================= */
 
   async createSession(userId: string, projectId: string) {
     return this.prisma.chatSession.create({
@@ -16,12 +22,16 @@ export class ChatService {
     });
   }
 
+  /* ================= GET SESSIONS ================= */
+
   async getSessions(userId: string, projectId: string) {
     return this.prisma.chatSession.findMany({
       where: { projectId, userId },
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  /* ================= GET MESSAGES ================= */
 
   async getMessages(userId: string, sessionId: string) {
     const session = await this.prisma.chatSession.findFirst({
@@ -37,6 +47,8 @@ export class ChatService {
       orderBy: { createdAt: 'asc' },
     });
   }
+
+  /* ================= SEND MESSAGE ================= */
 
   async sendMessage(userId: string, sessionId: string, message: string) {
     const session = await this.prisma.chatSession.findFirst({
@@ -57,23 +69,55 @@ export class ChatService {
     });
 
     try {
-      const baseUrl = process.env.AI_BASE_URL;
-      const apiKey = process.env.AI_API_KEY;
-      const model = process.env.AI_MODEL;
+      /* ================= AI PROVIDER (UNIFIED) ================= */
 
-      if (!baseUrl || !apiKey || !model) {
-        throw new BadRequestException('AI env config missing');
+      const provider = await this.aiProvidersService.getDefaultProvider();
+
+      if (!provider) {
+        throw new BadRequestException('No active AI provider configured');
       }
 
+      /* ================= OPTIONAL: LIGHT PROJECT CONTEXT ================= */
+
+      const files = await this.prisma.file.findMany({
+        where: { projectId: session.projectId },
+        take: 5,
+        orderBy: { path: 'asc' },
+      });
+
+      const projectContext =
+        files.length > 0
+          ? `
+Project Context (important files):
+${files
+  .map(
+    (f) =>
+      `FILE: ${f.path}\n${(f.content || '').slice(0, 500)}`,
+  )
+  .join('\n\n')}
+`
+          : '';
+
+      /* ================= AI REQUEST ================= */
+
       const response = await axios.post(
-        `${baseUrl}/chat/completions`,
+        `${provider.baseUrl}/chat/completions`,
         {
-          model,
+          model: provider.modelName,
           messages: [
             {
               role: 'system',
-              content:
-                'You are a helpful assistant. Give SHORT, SIMPLE, DIRECT answers in 1-4 lines only. No long explanation.',
+              content: `
+You are a senior code-aware assistant.
+
+Rules:
+- Keep answers VERY SHORT (1–4 lines max)
+- Be direct and practical
+- If code is involved, focus on bug fix or improvement
+- Do not over-explain
+
+${projectContext}
+              `.trim(),
             },
             {
               role: 'user',
@@ -85,7 +129,7 @@ export class ChatService {
         },
         {
           headers: {
-            Authorization: `Bearer ${apiKey}`,
+            Authorization: `Bearer ${provider.apiKey}`,
             'Content-Type': 'application/json',
           },
         },
@@ -98,6 +142,7 @@ export class ChatService {
         throw new BadRequestException('No response from AI');
       }
 
+      // Save assistant message
       await this.prisma.message.create({
         data: {
           sessionId,
@@ -108,14 +153,10 @@ export class ChatService {
 
       return { reply: assistantMessage };
     } catch (error) {
-      console.error(
-        'AI ERROR:',
-        error?.response?.data || error.message,
-      );
+      console.error('AI ERROR:', error?.response?.data || error.message);
 
       throw new BadRequestException(
-        error?.response?.data?.error?.message ||
-          'AI request failed',
+        error?.response?.data?.error?.message || 'AI request failed',
       );
     }
   }
