@@ -120,6 +120,7 @@ model ChatSession {
   id        String   @id @default(uuid())
   projectId String
   userId    String
+  providerId  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

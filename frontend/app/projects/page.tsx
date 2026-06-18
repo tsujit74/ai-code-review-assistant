@@ -378,7 +378,7 @@ export default function ProjectsPage() {
           </div>
 
           <div className="flex-1 overflow-hidden">
-            <ChatPanel projectId={selectedProject?.id} />
+            <ChatPanel projectId={selectedProject?.id} provider={selectedProvider} />
           </div>
         </div>
       )}

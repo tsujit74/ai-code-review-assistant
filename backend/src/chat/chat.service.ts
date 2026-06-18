@@ -54,7 +54,7 @@ export class ChatService {
     userId: string,
     sessionId: string,
     message: string,
-    providerId?: string, // 👈 IMPORTANT (USER CHOICE)
+    providerId?: string,
   ) {
     const session = await this.prisma.chatSession.findFirst({
       where: { id: sessionId, userId },

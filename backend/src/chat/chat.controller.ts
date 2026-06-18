@@ -27,6 +27,6 @@ export class ChatController {
 
   @Post('message')
   sendMessage(@User() user: any, @Body() dto: SendMessageDto) {
-    return this.chatService.sendMessage(user.id, dto.sessionId, dto.message);
+    return this.chatService.sendMessage(user.id, dto.sessionId, dto.message, dto.providerId);
   }
 }

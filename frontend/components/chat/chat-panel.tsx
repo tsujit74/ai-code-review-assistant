@@ -50,8 +50,10 @@ const getRoleMeta = (role: string): RoleMeta => {
 
 export function ChatPanel({
   projectId,
+  provider,
 }: {
   projectId: string;
+  provider: any;
 }) {
   const [sessions, setSessions] = useState<any[]>([]);
   const [selectedSession, setSelectedSession] =
@@ -133,6 +135,7 @@ export function ChatPanel({
       await sendChatMessage(
         selectedSession.id,
         text,
+        provider?.id,
       );
 
       await loadMessages(selectedSession.id);
@@ -200,6 +203,16 @@ export function ChatPanel({
               Context-aware project intelligence
             </p>
           </div>
+
+          <div className="flex items-center gap-2">
+  <span className="text-xs text-zinc-400">
+    Provider:
+  </span>
+
+  <span className="px-2 py-1 border border-zinc-700 bg-zinc-950 text-xs text-zinc-200">
+    {provider?.name || 'None'}
+  </span>
+</div>
 
           {selectedSession && (
             <div
