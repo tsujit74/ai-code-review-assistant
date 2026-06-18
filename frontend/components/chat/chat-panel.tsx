@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
 import {
   createChatSession,
   fetchChatMessages,
   fetchChatSessions,
   sendChatMessage,
-} from '@/lib/chat';
+} from "@/lib/chat";
 
-import { ChatSessions } from './chat-sessions';
+import { ChatSessions } from "./chat-sessions";
 
 type RoleMeta = {
   label: string;
@@ -18,32 +18,28 @@ type RoleMeta = {
 
 const getRoleMeta = (role: string): RoleMeta => {
   switch (role) {
-    case 'user':
+    case "user":
       return {
-        label: 'You',
-        badge:
-          'border-blue-500/30 bg-blue-500/10 text-blue-400',
+        label: "You",
+        badge: "border-blue-500/30 bg-blue-500/10 text-blue-400",
       };
 
-    case 'assistant':
+    case "assistant":
       return {
-        label: 'AI',
-        badge:
-          'border-zinc-700 bg-zinc-900 text-zinc-300',
+        label: "AI",
+        badge: "border-zinc-700 bg-zinc-900 text-zinc-300",
       };
 
-    case 'system':
+    case "system":
       return {
-        label: 'System',
-        badge:
-          'border-zinc-700 bg-zinc-900 text-zinc-500',
+        label: "System",
+        badge: "border-zinc-700 bg-zinc-900 text-zinc-500",
       };
 
     default:
       return {
         label: role,
-        badge:
-          'border-zinc-700 bg-zinc-900 text-zinc-400',
+        badge: "border-zinc-700 bg-zinc-900 text-zinc-400",
       };
   }
 };
@@ -56,15 +52,13 @@ export function ChatPanel({
   provider: any;
 }) {
   const [sessions, setSessions] = useState<any[]>([]);
-  const [selectedSession, setSelectedSession] =
-    useState<any>(null);
+  const [selectedSession, setSelectedSession] = useState<any>(null);
 
   const [messages, setMessages] = useState<any[]>([]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
 
   const [loading, setLoading] = useState(false);
-  const [loadingMessages, setLoadingMessages] =
-    useState(false);
+  const [loadingMessages, setLoadingMessages] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -78,14 +72,11 @@ export function ChatPanel({
     }
   };
 
-  const loadMessages = async (
-    sessionId: string,
-  ) => {
+  const loadMessages = async (sessionId: string) => {
     setLoadingMessages(true);
 
     try {
-      const data =
-        await fetchChatMessages(sessionId);
+      const data = await fetchChatMessages(sessionId);
 
       setMessages(data);
     } finally {
@@ -105,13 +96,12 @@ export function ChatPanel({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
-      behavior: 'smooth',
+      behavior: "smooth",
     });
   }, [messages]);
 
   const handleCreateSession = async () => {
-    const session =
-      await createChatSession(projectId);
+    const session = await createChatSession(projectId);
 
     await loadSessions();
 
@@ -119,24 +109,15 @@ export function ChatPanel({
   };
 
   const handleSend = async () => {
-    if (
-      !input.trim() ||
-      !selectedSession ||
-      loading
-    )
-      return;
+    if (!input.trim() || !selectedSession || loading) return;
 
     const text = input;
 
-    setInput('');
+    setInput("");
     setLoading(true);
 
     try {
-      await sendChatMessage(
-        selectedSession.id,
-        text,
-        provider?.id,
-      );
+      await sendChatMessage(selectedSession.id, text, provider?.id);
 
       await loadMessages(selectedSession.id);
     } finally {
@@ -164,9 +145,7 @@ export function ChatPanel({
       >
         <ChatSessions
           sessions={sessions}
-          selectedSessionId={
-            selectedSession?.id
-          }
+          selectedSessionId={selectedSession?.id}
           onSelect={setSelectedSession}
           onCreate={handleCreateSession}
         />
@@ -205,14 +184,12 @@ export function ChatPanel({
           </div>
 
           <div className="flex items-center gap-2">
-  <span className="text-xs text-zinc-400">
-    Provider:
-  </span>
+            <span className="text-xs text-zinc-400">Provider:</span>
 
-  <span className="px-2 py-1 border border-zinc-700 bg-zinc-950 text-xs text-zinc-200">
-    {provider?.name || 'None'}
-  </span>
-</div>
+            <span className="px-2 py-1 border border-zinc-700 bg-zinc-950 text-xs text-zinc-200">
+              {provider?.name || "None"}
+            </span>
+          </div>
 
           {selectedSession && (
             <div
@@ -242,9 +219,7 @@ export function ChatPanel({
               px-8
             "
           >
-            <div className="text-5xl mb-4">
-              🤖
-            </div>
+            <div className="text-5xl mb-4">🤖</div>
 
             <h3
               className="
@@ -264,10 +239,8 @@ export function ChatPanel({
                 max-w-md
               "
             >
-              Create a session and ask questions
-              about architecture, bugs,
-              security, performance, or your
-              uploaded codebase.
+              Create a session and ask questions about architecture, bugs,
+              security, performance, or your uploaded codebase.
             </p>
 
             <button
@@ -319,13 +292,9 @@ export function ChatPanel({
                     text-center
                   "
                 >
-                  <div className="text-4xl mb-3">
-                    💬
-                  </div>
+                  <div className="text-4xl mb-3">💬</div>
 
-                  <h3 className="text-zinc-300">
-                    New Conversation
-                  </h3>
+                  <h3 className="text-zinc-300">New Conversation</h3>
 
                   <p
                     className="
@@ -334,25 +303,20 @@ export function ChatPanel({
                       mt-2
                     "
                   >
-                    Ask AI anything about your
-                    project.
+                    Ask AI anything about your project.
                   </p>
                 </div>
               ) : (
                 messages.map((msg) => {
-                  const isUser =
-                    msg.role === 'user';
+                  const isUser = msg.role === "user";
 
-                  const meta =
-                    getRoleMeta(msg.role);
+                  const meta = getRoleMeta(msg.role);
 
                   return (
                     <div
                       key={msg.id}
                       className={`flex ${
-                        isUser
-                          ? 'justify-end'
-                          : 'justify-start'
+                        isUser ? "justify-end" : "justify-start"
                       }`}
                     >
                       <div
@@ -423,14 +387,9 @@ export function ChatPanel({
               <div className="flex gap-3">
                 <input
                   value={input}
-                  onChange={(e) =>
-                    setInput(e.target.value)
-                  }
+                  onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (
-                      e.key === 'Enter' &&
-                      !e.shiftKey
-                    ) {
+                    if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
                       handleSend();
                     }
@@ -451,9 +410,7 @@ export function ChatPanel({
 
                 <button
                   onClick={handleSend}
-                  disabled={
-                    loading || !input.trim()
-                  }
+                  disabled={loading || !input.trim()}
                   className="
                     h-11
                     px-5
@@ -467,9 +424,7 @@ export function ChatPanel({
                     transition
                   "
                 >
-                  {loading
-                    ? 'Thinking...'
-                    : 'Send'}
+                  {loading ? "Thinking..." : "Send"}
                 </button>
               </div>
             </div>

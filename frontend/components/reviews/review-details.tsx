@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
 export function ReviewDetails({ review }: { review: any | null }) {
   const formatDate = (date: string) =>
-    new Date(date).toLocaleString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    new Date(date).toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
 
   const severityStyle = (severity: string) => {
     switch (severity?.toLowerCase()) {
-      case 'high':
-      case 'critical':
-        return 'text-red-300 bg-red-500/10 border-red-500/30';
-      case 'medium':
-        return 'text-yellow-300 bg-yellow-500/10 border-yellow-500/30';
+      case "high":
+      case "critical":
+        return "text-red-300 bg-red-500/10 border-red-500/30";
+      case "medium":
+        return "text-yellow-300 bg-yellow-500/10 border-yellow-500/30";
       default:
-        return 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30';
+        return "text-emerald-300 bg-emerald-500/10 border-emerald-500/30";
     }
   };
 
@@ -33,8 +33,8 @@ export function ReviewDetails({ review }: { review: any | null }) {
           </h3>
 
           <p className="mt-2 text-sm text-zinc-400">
-            Choose a review from the timeline to inspect AI findings,
-            detected risks and recommendations.
+            Choose a review from the timeline to inspect AI findings, detected
+            risks and recommendations.
           </p>
         </div>
       </div>
@@ -52,7 +52,7 @@ export function ReviewDetails({ review }: { review: any | null }) {
             </h2>
 
             <p className="mt-1 text-sm text-zinc-300">
-              {review.type?.replaceAll('_', ' ')}
+              {review.type?.replaceAll("_", " ")}
             </p>
           </div>
 
@@ -69,25 +69,13 @@ export function ReviewDetails({ review }: { review: any | null }) {
       <div className="p-4 space-y-6">
         {/* Metrics */}
         <div className="grid grid-cols-4 gap-2">
-          <Metric
-            label="Severity"
-            value={review.severity}
-          />
+          <Metric label="Severity" value={review.severity} />
 
-          <Metric
-            label="Status"
-            value={review.status}
-          />
+          <Metric label="Status" value={review.status} />
 
-          <Metric
-            label="Issues"
-            value={review.issues?.length || 0}
-          />
+          <Metric label="Issues" value={review.issues?.length || 0} />
 
-          <Metric
-            label="Generated"
-            value={formatDate(review.createdAt)}
-          />
+          <Metric label="Generated" value={formatDate(review.createdAt)} />
         </div>
 
         {/* Summary */}
@@ -100,7 +88,7 @@ export function ReviewDetails({ review }: { review: any | null }) {
 
           <div className="p-3">
             <p className="text-sm leading-7 text-zinc-300">
-              {review.summary || 'No summary available'}
+              {review.summary || "No summary available"}
             </p>
           </div>
         </section>
@@ -119,7 +107,7 @@ export function ReviewDetails({ review }: { review: any | null }) {
 
           <div className="space-y-3">
             {(review.issues || []).map((issue: any, i: number) => {
-              const isString = typeof issue === 'string';
+              const isString = typeof issue === "string";
 
               return (
                 <div
@@ -156,8 +144,14 @@ export function ReviewDetails({ review }: { review: any | null }) {
                       </div>
 
                       <h4 className="text-sm font-medium text-zinc-100">
-                        {issue.problem}
+                        {issue.problem || issue.description}
                       </h4>
+
+                      {issue.line && (
+                        <div className="mt-2 text-xs text-zinc-400">
+                          Line: {issue.line}
+                        </div>
+                      )}
 
                       {issue.lineHint && (
                         <div className="mt-4">
@@ -187,34 +181,51 @@ export function ReviewDetails({ review }: { review: any | null }) {
           </div>
 
           <div className="space-y-3">
-            {(review.recommendations || []).map(
-              (rec: any, index: number) => (
-                <div
-                  key={index}
-                  className="border border-zinc-700 bg-zinc-900/40 p-4"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h4 className="text-sm font-medium text-zinc-100">
-                        {rec.title || rec}
-                      </h4>
+            {(review.recommendations || []).map((rec: any, index: number) => (
+              <div
+                key={index}
+                className="border border-zinc-700 bg-zinc-900/40 p-4"
+              >
+                {/* String Recommendation */}
+                {typeof rec === "string" ? (
+                  <p className="text-sm text-zinc-200">{rec}</p>
+                ) : (
+                  <>
+                    <h4 className="text-sm font-medium text-zinc-100">
+                      {rec.title || rec.description || "Recommendation"}
+                    </h4>
 
-                      {rec.detail && (
-                        <p className="mt-2 text-sm text-zinc-300 leading-6">
-                          {rec.detail}
-                        </p>
-                      )}
-                    </div>
+                    {(rec.detail || rec.description) && (
+                      <p className="mt-2 text-sm text-zinc-300 leading-6">
+                        {rec.detail || rec.description}
+                      </p>
+                    )}
+
+                    {Array.isArray(rec.details) && rec.details.length > 0 && (
+                      <ul className="mt-3 space-y-2">
+                        {rec.details.map((item: string, idx: number) => (
+                          <li
+                            key={idx}
+                            className="text-sm text-zinc-300 flex gap-2"
+                          >
+                            <span>•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
 
                     {rec.priority && (
-                      <span className="text-[10px] border border-blue-500/30 bg-blue-500/10 text-blue-300 px-2 py-1 uppercase">
-                        {rec.priority}
-                      </span>
+                      <div className="mt-3">
+                        <span className="text-[10px] border border-blue-500/30 bg-blue-500/10 text-blue-300 px-2 py-1 uppercase">
+                          {rec.priority}
+                        </span>
+                      </div>
                     )}
-                  </div>
-                </div>
-              ),
-            )}
+                  </>
+                )}
+              </div>
+            ))}
           </div>
         </section>
       </div>
@@ -222,13 +233,7 @@ export function ReviewDetails({ review }: { review: any | null }) {
   );
 }
 
-function Metric({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | number;
-}) {
+function Metric({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="border border-zinc-400 bg-zinc-900/40 p-4">
       <div className="text-[10px] uppercase tracking-wide text-zinc-300">
