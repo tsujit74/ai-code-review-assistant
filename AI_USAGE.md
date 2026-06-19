@@ -1,5 +1,19 @@
 # AI_USAGE
 
+## AI Development Workflow
+
+The project followed an iterative AI-assisted development process. AI was used to accelerate implementation while maintaining manual engineering review and decision-making throughout development.
+
+```mermaid
+flowchart LR
+    A[Project Requirements] --> B[Prompt Engineering]
+    B --> C[AI-Assisted Implementation]
+    C --> D[Manual Review & Refactoring]
+    D --> E[Testing & Debugging]
+    E --> F[Documentation]
+    F --> G[Final Submission]
+```
+
 ## AI Usage Overview
 
 This project was developed with assistance from AI-powered engineering tools used as development assistants during implementation. AI was used to accelerate project planning, code generation, documentation drafting, debugging, refactoring support, and design validation.
