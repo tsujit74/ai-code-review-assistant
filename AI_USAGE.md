@@ -1,127 +1,190 @@
-# AI Usage
+# AI_USAGE
 
-## Purpose
+## AI Usage Overview
 
-This application uses AI in two places:
-- code review generation,
-- codebase chat.
+This project was developed with assistance from AI-powered engineering tools used as development assistants during implementation. AI was used to accelerate project planning, code generation, documentation drafting, debugging, refactoring support, and design validation.
 
-Both features are driven by user-selected AI provider settings stored in the backend.
+AI assistance was used to improve development speed and help structure the work, but it was not treated as a substitute for engineering judgment. All important implementation decisions, code review, testing, and final integration were handled manually.
 
-## AI Provider Model
+## AI Tools Used
 
-The application does not depend on a single AI vendor. Instead, each user can configure one or more AI providers with:
-- name,
-- base URL,
-- API key,
-- model name,
-- active status.
+### Perplexity AI
+Perplexity AI was used as the primary development assistant for:
+- implementation planning,
+- backend generation support,
+- frontend generation support,
+- architecture discussions,
+- documentation drafting,
+- requirement validation,
+- code explanation,
+- debugging support,
+- prompt refinement.
 
-This makes the system compatible with OpenAI-style APIs and similar provider endpoints.
+### ChatGPT
+ChatGPT was used for:
+- architecture review,
+- documentation improvement,
+- UI and UX feedback,
+- prompt engineering support,
+- code explanation,
+- refinement of implementation ideas,
+- review of design decisions.
 
-## Provider Configuration
+Only the AI tools actually used during development are listed above.
 
-AI provider records are stored per user. A provider entry contains:
-- `name` for display,
-- `baseUrl` for the API endpoint,
-- `apiKey` for authentication,
-- `modelName` for the chosen model,
-- `isActive` to mark the default provider.
+## How AI Was Used
 
-The backend exposes endpoints to create, list, fetch, update, and delete providers. Users can also request the currently active provider.
+AI assistance supported multiple stages of development across the project lifecycle.
 
-## Review Usage
+### Project Planning
+AI helped break the project into feature modules and identify the major building blocks required for a full-stack code review assistant.
 
-### When AI is used
-AI is used when a user generates a review for a project.
+### Folder Structure
+AI was used to shape the frontend and backend folder organization into feature-based modules that were easier to maintain.
 
-### Input to the model
-The backend builds a prompt from:
-- the project’s extracted files,
-- the selected review type,
-- the provider’s model configuration.
+### NestJS Architecture
+AI assisted with structuring the backend into modules, controllers, services, DTOs, and guards.
 
-### Output from the model
-The AI response is normalized into review data and saved in the database as:
-- summary,
-- issues,
-- recommendations,
-- severity,
-- status.
+### Next.js Architecture
+AI helped organize the frontend into route groups, reusable feature components, and shared utility layers.
 
-### Review types
-The schema defines the following review categories:
-- `SECURITY`
-- `PERFORMANCE`
-- `CODE_QUALITY`
+### Database Schema
+AI supported the initial Prisma schema design and refinement of relationships between users, projects, files, reviews, chat sessions, messages, and AI provider records.
 
-### Severity levels
-The schema defines the following severity levels:
-- `CRITICAL`
-- `HIGH`
-- `MEDIUM`
-- `LOW`
-- `INFO`
+### Prisma Modeling
+AI helped validate the model relationships, indexes, enum usage, and ownership boundaries in the schema.
 
-## Chat Usage
+### API Design
+AI assisted in shaping the REST endpoint structure for authentication, projects, files, reviews, chat, and AI provider management.
 
-### When AI is used
-AI is used when a user sends a message inside a chat session.
+### React Components
+AI helped scaffold the overall component structure for auth, projects, files, reviews, chat, landing pages, and AI provider screens.
 
-### Input to the model
-The backend uses:
-- the current chat session,
-- stored message history,
-- the selected AI provider,
-- project file context when available.
+### Tailwind Styling
+AI contributed to early UI layout ideas and component structure that were later refined manually.
 
-### Output from the model
-The assistant response is stored as a new message in the session with role `ASSISTANT`.
+### Authentication
+AI assisted with planning JWT-based authentication flow, protected endpoints, and user-scoped access patterns.
 
-### Message roles
-The schema defines:
-- `USER`
-- `ASSISTANT`
+### AI Provider Abstraction
+AI was used to reason about a provider-agnostic configuration model so the application could support OpenAI-compatible endpoints in a flexible way.
 
-## Request Flow
+### Documentation
+AI was used to draft and refine supporting documents such as `README.md`, `ARCHITECTURE.md`, and this `AI_USAGE.md`.
 
-### Review request
-1. User selects a project.
-2. User triggers a review.
-3. Backend loads project files.
-4. Backend loads the user’s active provider or selected provider.
-5. Backend sends the prompt to the AI provider.
-6. Backend saves the response as a review record.
-7. Frontend shows the review result.
+### Debugging and Refactoring
+AI was used as a debugging aid when resolving implementation details, improving code clarity, and identifying opportunities for simplification or refactoring.
 
-### Chat request
-1. User opens or creates a chat session.
-2. User sends a message.
-3. Backend loads session history.
-4. Backend sends a provider request using the selected configuration.
-5. Backend stores the assistant reply.
-6. Frontend renders the updated conversation.
+## Prompt Engineering Approach
 
-## Provider Compatibility
+The development workflow used focused prompt categories rather than one-off ad hoc prompts.
 
-The backend is designed to work with providers that expose an OpenAI-compatible API format. That gives users flexibility to use different services without changing the app’s core behavior.
+### Architecture Planning
+Prompts were used to define the overall system shape, module boundaries, and project decomposition.
 
-Examples of provider types that fit this style include:
-- local model servers,
-- hosted inference APIs,
-- third-party AI gateways.
+### Feature Implementation
+Prompts were used to scaffold major features such as authentication, project management, file upload, reviews, chat, and AI provider handling.
 
-## Environment Variables
+### Backend Module Generation
+Prompts were used to generate or refine NestJS modules, controllers, services, and DTOs.
 
-The backend environment includes AI-related configuration values such as:
-- provider base URL,
-- provider API key,
-- provider model name.
+### Frontend Component Generation
+Prompts were used to scaffold React and Next.js UI sections and page-level structure.
 
-These values can be used as defaults or development fallbacks depending on how the backend service is configured.
+### Database Design
+Prompts were used to refine the Prisma schema and confirm relationships and indexes.
 
-## Safety Notes
+### Documentation Generation
+Prompts were used to draft and improve technical documentation in a structured and consistent format.
 
-AI provider keys are sensitive credentials and should not be exposed in the frontend. They should remain stored only in secure backend storage and be used only for server-side requests.
+### Bug Fixing
+Prompts were used to investigate errors, explain failures, and suggest likely corrections.
 
-Large codebases should be handled carefully to avoid sending unnecessary context to the model. The backend should only include the files or excerpts needed for the review or chat request.
+### Refactoring
+Prompts were used to simplify code structure, improve readability, and align implementation with the intended architecture.
+
+## AI Generated Code
+
+AI assistance was used to scaffold early versions of several project areas, including:
+- initial React component structures,
+- NestJS module scaffolding,
+- controllers,
+- services,
+- DTO drafts,
+- Prisma schema drafts,
+- Tailwind-based layout ideas,
+- documentation drafts.
+
+These outputs were used as starting points only. They were not accepted without review or modification.
+
+## Manual Development
+
+The generated output was manually reviewed and refined before being merged into the project.
+
+Manual development included:
+- reviewing AI-generated code for correctness,
+- refactoring for maintainability,
+- integrating separate modules into a working application,
+- writing and adjusting custom business logic,
+- improving validation and error handling,
+- connecting frontend and backend APIs,
+- refining UI behavior and layout,
+- adjusting database models and relationships,
+- testing functionality and fixing defects,
+- ensuring that ownership and security checks were correctly enforced.
+
+AI-generated code was never used blindly. Every important part of the implementation was checked, understood, and adapted to the needs of the project.
+
+## Engineering Decisions
+
+Several key engineering decisions were made during development to keep the project practical, maintainable, and aligned with the assessment requirements.
+
+### Next.js for Frontend
+Next.js was selected for the frontend because it provides a strong structure for routing, component organization, and production-ready React development.
+
+### NestJS for Backend
+NestJS was selected for the backend because it supports modular architecture, dependency injection, and clean separation of controllers and services.
+
+### PostgreSQL with Prisma
+PostgreSQL and Prisma were used to provide a relational data model with strong schema control, migrations, and type-safe database access.
+
+### JWT Authentication
+JWT authentication was used to support stateless protected routes and user-scoped access control.
+
+### Feature-Based Architecture
+A feature-based structure was used across the frontend and backend to keep the codebase organized and easier to scale.
+
+### Provider-Agnostic AI Integration
+The AI provider layer was designed to be flexible rather than tied to one vendor, making it easier to support different OpenAI-compatible endpoints.
+
+### User-Owned AI Provider Configuration
+AI provider credentials were stored per user so each user could manage their own configuration independently.
+
+### Server-Side ZIP Extraction
+ZIP files were processed on the backend so the application could validate, extract, and persist file contents in a controlled way.
+
+### Persistent Review History
+Review results were stored in the database so users could revisit prior analyses instead of treating reviews as one-time responses.
+
+### AI Chat with Project Context
+Chat sessions were designed around project context and stored message history so conversations could remain useful across multiple turns.
+
+## Validation and Testing
+
+All AI-assisted implementations were manually reviewed before being accepted into the project. Functionality was validated through development-time debugging, iterative refinement, and verification of the major backend and frontend flows.
+
+Testing and review focused on:
+- authentication behavior,
+- project ownership boundaries,
+- upload handling,
+- database relationships,
+- provider configuration handling,
+- review persistence,
+- chat session persistence,
+- frontend-backend integration.
+
+Where AI suggestions were incomplete or not aligned with the implementation goals, they were corrected manually.
+
+## AI Usage Declaration
+
+This project was developed with assistance from AI-powered engineering tools. AI was used to accelerate development, improve productivity, and assist with documentation and debugging. All generated code was manually reviewed, understood, tested, and modified where necessary before submission. Final engineering decisions and responsibility for the submitted implementation remain with the developer.
