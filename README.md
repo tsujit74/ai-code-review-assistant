@@ -2,6 +2,12 @@
 
 AI-Powered Code Review Assistant is a full-stack web application that lets authenticated users create projects, upload ZIP archives of source code, browse extracted files, run AI-powered reviews, manage their own AI provider configurations, and chat with the uploaded codebase.
 
+A production-oriented AI-powered code review platform built with Next.js, NestJS, PostgreSQL, and OpenAI-compatible AI providers.
+
+## Application Preview
+
+![AI-Powered Code Review Assistant](./docs/screenshots/dashboard.png)
+
 ## Project Overview
 
 This application is built for code analysis workflows. A user signs up, logs in, creates a project, uploads a ZIP file, and the backend extracts the archive into individual files stored in PostgreSQL through Prisma.
